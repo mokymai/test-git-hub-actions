@@ -28,7 +28,7 @@ jobs:
       # RSPM: ${{ matrix.config.rspm }}
       SOURCE_REPO: ${{ github.event.repository.name }}
       DEST_REPO:  mokymai/download
-      TMP_DIR: tmp-${{ runner.os }}
+      TMP_DIR: ${{ runner.os }}
       # DEST_ORG:   mokymai
       # DEST_REPO_NAME:  download
 
