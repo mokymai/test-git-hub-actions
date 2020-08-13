@@ -26,12 +26,12 @@ jobs:
     env:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
       # RSPM: ${{ matrix.config.rspm }}
-      SOURCE_REPO: ${{ github.event.repository.name }}
+      SOURCE_REPO: ${{ github.repository }}
       DEST_REPO:   mokymai/download
-      TMP_DIR:     tmp_dir
-      # TMP_DIR: tmp-${{ runner.os }}
+      TMP_DIR:     tmp_dir # TMP_DIR: tmp-${{ runner.os }}
       # DEST_ORG:   mokymai
       # DEST_REPO_NAME:  download
+      # SOURCE_REPO_NAME: ${{ github.event.repository.name }}
 
     steps:
       - name: Print info
@@ -135,51 +135,41 @@ jobs:
 
 
 # Please leave commented lines below, they are very helpful in troubleshooting.
-      # - name: Deploy -- update README.md
-        # if: success()
-        # run: |
-        #    cd ${DEST_REPO_NAME}
-        #    # grab the portion of the file we want to re-use
-        #    awk '/^# hySpc\.pkgs$/, /^Packages currently residing here:$/' README.md > README.tmp
-        #    # append the listing of .tar.gz present, along
-        #    # a little formating (appending to .md that will be parsed
-        #    # and displayed by GH)
-        #    ls -lhR  --time-style=long-iso | grep \.tar\.gz$ | awk '{print "\n* "$8, " ("$6")"}' >> README.tmp
-        #    mv README.tmp README.md
+      # - name: Drat -- update README.md
+      # if: success()
+      # run: |
+      #    cd ${TMP_DIR}
+      #    # grab the portion of the file we want to re-use
+      #    awk '/^# hySpc\.pkgs$/, /^Packages currently residing here:$/' README.md > README.tmp
+      #    # append the listing of .tar.gz present, along
+      #    # a little formating (appending to .md that will be parsed
+      #    # and displayed by GH)
+      #    ls -lhR  --time-style=long-iso | grep \.tar\.gz$ | awk '{print "\n* "$8, " ("$6")"}' >> README.tmp
+      #    mv README.tmp README.md
 
-      - name: Deploy -- insert
+      - name: Drat -- insert
         if: success()
         run: |
-          TMP_DIR <- Sys.getenv("TMP_DIR")
-
-          print(TMP_DIR)
-          print(getwd())
-          print(dir())
-          print(list.files(recursive = TRUE, pattern = "\\.tar\\.gz"))
-
-          targz <- list.files(
-            path = "check",
-            pattern = "\\.tar\\.gz",
-            full.names = TRUE
-          )[1] # there will be only one!
-
-          print(targz)
+          built_package <-
+            list.files(
+              path       = "check",
+              pattern    = "[.]tar[.]gz",
+              full.names = TRUE
+            )
 
           drat::insertPackage(
-            targz,
-            repodir = TMP_DIR,
-            action = "archive"
+            file    = built_package,
+            repodir = Sys.getenv("TMP_DIR"),
+            action  = "archive"
           )
         shell: Rscript {0}
 
-      - name: Deploy -- commit and push
+      - name: Drat -- commit and push
         if: success()
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
-          pwd
           cd ${TMP_DIR} # move into the subdir, which is Git controlled
-          pwd
           git add *
           git commit -m "Update from ${SOURCE_REPO}" || echo "Nothing to commit"
           git push origin master                     || echo "Nothing to commit"
